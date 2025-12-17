@@ -5,8 +5,12 @@ import com.kkek.assistant.System.touch.AccessibilityHelper
 import com.kkek.assistant.data.AssistantRepository
 import com.kkek.assistant.domain.model.AiTool
 import com.kkek.assistant.music.SpotifyHelper
+import com.kkek.assistant.tools.AnswerCallTool
+import com.kkek.assistant.tools.AudioRouteTool
 import com.kkek.assistant.tools.CallTool
+import com.kkek.assistant.tools.EndCallTool
 import com.kkek.assistant.tools.LaunchAppTool
+import com.kkek.assistant.tools.MuteTool
 import com.kkek.assistant.tools.NotificationTool
 import com.kkek.assistant.tools.SpotifyTool
 import com.kkek.assistant.tools.StatusTool
@@ -49,4 +53,22 @@ object ToolModule {
     @Provides
     @IntoSet
     fun provideCallTool(repository: AssistantRepository): AiTool = CallTool(repository)
+
+    @Provides
+    @IntoSet
+    fun provideAnswerCallTool(repository: AssistantRepository): AiTool =
+        AnswerCallTool(repository)
+
+    @Provides
+    @IntoSet
+    fun provideEndCallTool(repository: AssistantRepository): AiTool = EndCallTool(repository)
+
+    @Provides
+    @IntoSet
+    fun provideMuteTool(repository: AssistantRepository): AiTool = MuteTool(repository)
+
+    @Provides
+    @IntoSet
+    fun provideAudioRouteTool(repository: AssistantRepository): AiTool =
+        AudioRouteTool(repository)
 }

@@ -3,7 +3,6 @@ package com.kkek.assistant.repository
 import android.util.Log
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.GenericTypeIndicator
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.firestore.ktx.firestore
@@ -13,6 +12,9 @@ import com.kkek.assistant.data.CallDetails
 import com.kkek.assistant.data.model.Contact
 import com.kkek.assistant.data.model.ScreenCapture
 import com.kkek.assistant.domain.model.AiTool
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 object FirebaseRepository {
@@ -45,25 +47,6 @@ object FirebaseRepository {
             }
     }
 
-    fun listenForCommands(onCommand: (String, Map<String, Any>) -> Unit) {
-        RealTimeDB.child("commands").child("pending").addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.children.forEach { commandSnapshot ->
-                    val toolId = commandSnapshot.child("tool").getValue(String::class.java) // Corrected from toolId to tool
-                    val params = commandSnapshot.child("params").getValue(object : GenericTypeIndicator<Map<String, Any>>() {})
-                    if (toolId != null && params != null) {
-                        onCommand(toolId, params)
-                        // Remove the command from Firebase after processing
-                        commandSnapshot.ref.removeValue()
-                    }
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.w("FirebaseRepository", "listenForCommands:onCancelled", error.toException())
-            }
-        })
-    }
 
     fun uploadNotification(notification: AppNotification) {
         FirestoreDB.collection("notifications").add(notification)

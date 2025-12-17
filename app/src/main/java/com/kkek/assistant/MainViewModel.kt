@@ -17,6 +17,7 @@ import androidx.lifecycle.viewModelScope
 import com.kkek.assistant.core.Command
 import com.kkek.assistant.core.CommandQueue
 import com.kkek.assistant.data.AssistantRepository
+import com.kkek.assistant.data.model.CallState
 import com.kkek.assistant.data.repository.ContactRepository
 import com.kkek.assistant.domain.model.ToolResult
 import com.kkek.assistant.domain.store.ToolStore
@@ -30,11 +31,14 @@ import com.kkek.assistant.System.notification.NotificationListener
 import com.kkek.assistant.states.AppsState
 import com.kkek.assistant.states.ContactsState
 import com.kkek.assistant.states.DefaultState
+import com.kkek.assistant.states.DialingState
 import com.kkek.assistant.states.InCallState
+import com.kkek.assistant.states.IncomingCallState
 import com.kkek.assistant.states.SpotifyState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -74,6 +78,21 @@ class MainViewModel @Inject constructor(
     var currentList by mutableStateOf<List<ListItem>>(emptyList())
     var selectedIndex by mutableStateOf(0)
 
+    val uiState = repository.callState.map { callState ->
+        when (callState.state) {
+            CallState.State.RINGING -> IncomingCallState.build()
+            CallState.State.DIALING -> DialingState.build()
+            CallState.State.OFFHOOK -> InCallState.build()
+            else -> DefaultState.build()
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = DefaultState.build()
+    )
+
+
+
     val batteryPercent = repository.batteryPercent.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -106,13 +125,14 @@ class MainViewModel @Inject constructor(
         FirebaseRepository.uploadAvailableCommands(allTools)
 
         // 2. Start listening for incoming commands
-        FirebaseRepository.listenForCommands { toolId, params ->
-            viewModelScope.launch {
-                val action = ToolAction(toolId, params)
-                executeAiTool(action)
-            }
-        }
+
+
         observeContactUpdates()
+
+        uiState.onEach { newList ->
+            currentList = newList
+            selectedIndex = 0
+        }.launchIn(viewModelScope)
     }
 
     private fun listenForCommands() {
@@ -138,13 +158,24 @@ class MainViewModel @Inject constructor(
     }
 
     fun onAppOpen() {
-        val isInCall = telephonyManager.callState != TelephonyManager.CALL_STATE_IDLE
-        val isMusicPlaying = audioManager.isMusicActive
+        // The repository's callState is the source of truth for all call-related UI.
+        // The uiState flow reacts to this, so we check the source directly to avoid race conditions.
+        val currentCallState = repository.callState.value.state
 
-        when {
-            isInCall -> showInCallList()
-            isMusicPlaying -> showSpotifyList()
-            else -> showDefaultList()
+        // If the device is in any non-idle call state (ringing, dialing, or off-hook),
+        // we must not interfere. The reactive `uiState` flow has already set the correct
+        // context-specific UI (IncomingCallState, DialingState, etc.).
+        if (currentCallState != CallState.State.IDLE) {
+            return
+        }
+
+        // If we are not in a call, we then determine the appropriate context.
+        val isMusicPlaying = audioManager.isMusicActive
+        if (isMusicPlaying) {
+            showSpotifyList()
+        } else {
+            // The default state when not in a call and no music is playing.
+            showDefaultList()
         }
     }
 

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.telecom.Call
 import android.util.Log
 import com.kkek.assistant.System.notification.AppNotification
 import com.kkek.assistant.data.model.ScreenCapture
@@ -11,6 +12,7 @@ import com.kkek.assistant.repository.FirebaseRepository
 import com.kkek.assistant.data.CallDetails
 import com.kkek.assistant.data.model.CallState
 import com.kkek.assistant.data.model.Contact
+import com.kkek.assistant.modules.CallService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +39,28 @@ class AssistantRepository @Inject constructor(@ApplicationContext private val co
 
     private val _callState = MutableStateFlow(CallState(CallState.State.IDLE))
     val callState = _callState.asStateFlow()
+
+
+    val callService: CallService?
+        get() = CallService.instance
+
+
+
+    fun acceptCall() {
+        callService?.answer()
+    }
+
+    fun rejectCall() {
+        callService?.hangup()
+    }
+
+    fun toggleMute() {
+        callService?.toggleMute()
+    }
+
+    fun cycleAudioRoute() {
+        callService?.cycleAudioRoute()
+    }
 
     fun updateCallState(callState: CallState) {
         _callState.value = callState

@@ -7,6 +7,7 @@ data class CallState(
     enum class State {
         IDLE,
         RINGING,
-        OFFHOOK
+        OFFHOOK,
+        DIALING
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -178,6 +179,8 @@ class MainActivity : ComponentActivity(), VolumeCommandListener {
             }
         }
     }
+
+    
 
     private fun requestDialerRoleOrChangeDefault() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
